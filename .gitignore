@@ -1,5 +1,6 @@
 # Folders
 archive
+*.pth
 
 # 笔记中间保存文件
 # Jupyter Notebook
