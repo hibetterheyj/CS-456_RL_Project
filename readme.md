@@ -7,15 +7,17 @@ In this mini-project, our goal is to use Q-Learning and Deep Q-Learning to train
 ## Environment
 
 ```python
+conda create -n ann python=3.7
 conda install -y numpy
 conda install -y matplotlib
 
 # notebook and extension
-python -m pip install -y notebook
-python -m pip install -y jupyter_contrib_nbextensions
+python -m pip install notebook
+conda install -c conda-forge ipywidgets -y
+python -m pip install jupyter_contrib_nbextensions
 jupyter contrib nbextension install --user
 
-# CUDA 11.3
+# CUDA 11.3 with torch
 conda install -y pytorch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1 cudatoolkit=11.3 -c pytorch -c conda-forge
 
 # misc
@@ -37,10 +39,11 @@ python -m pip install pygame
 
 - [ ] Implement Q-Learning
 - [ ] Implement Deep Q-Learning
+  - [x] Implement Basic pipeline
+  - [ ] Modify different arch with dict
+  - [ ] Implement functions to save and load policy
 - [ ] Compare Q-Learning and Deep Q-Learning
 - [ ] Miscellaneous
   - [ ] Integrate with tensorboard or other tunable visualization tools with logging module
   - [ ] Implement measurement of performance
-  - [ ] Implement functions to save and load policy
-  - [ ] Plot performance
   - [ ] Init with different random seeds

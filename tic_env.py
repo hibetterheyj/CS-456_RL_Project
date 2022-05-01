@@ -300,7 +300,7 @@ class OptimalPlayer:
         """
         Goes through a hierarchy of moves, making the best move that
         is currently available each time (with probabitity 1-self.epsilon).
-        A touple is returned that represents (row, col).
+        A tuple is returned that represents (row, col).
         """
         # whether move in random or not
         if random.random() < self.epsilon:
