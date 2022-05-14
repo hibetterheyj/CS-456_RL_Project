@@ -4,6 +4,10 @@
 
 In this mini-project, our goal is to use Q-Learning and Deep Q-Learning to train artificial agents that can play the famous game of [Tic Tac Toe](https://en.wikipedia.org/wiki/Tic-tac-toe).
 
+## Deadline
+
+**Submit by June 6 (before 23:30) and give the fraud detection interview on June 9 or June 10.**
+
 ## Environment
 
 ```python
