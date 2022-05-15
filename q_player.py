@@ -30,7 +30,8 @@ class QPlayer:
         for state in itertools.product([0, 1, -1], repeat=9):
             for action in range(9):
                 if state[action] == 0:
-                    self.q_table.update({state + (action,): 0})
+                    if (np.sum(state) == 0) or (np.sum(state) == -1):
+                        self.q_table.update({state + (action,): 0})
 
     def empty(self, grid: np.ndarray) -> list[Tuple]:
         """return all empty positions"""
@@ -76,10 +77,15 @@ class QPlayer:
         return best_actions[random.randint(0, len(best_actions) - 1)]
 
     def update_q(
-        self, reward: float, grid: np.ndarray, move: Tuple[int], is_end: bool = False
+        self,
+        reward: float,
+        grid: np.ndarray,
+        grid_prev: np.ndarray,
+        move_prev: Tuple[int],
+        is_end: bool = False,
     ) -> None:
 
-        tab_idx = self.get_index(grid, move)
+        tab_idx = self.get_index(grid_prev, move_prev)
 
         if is_end:
             # if game ends, no need to find max Q value in next state
@@ -89,11 +95,9 @@ class QPlayer:
             )
         else:
             # if game doesn't end, reward is always zero
-            grid_next = grid.copy()
-            grid_next[move] = self.player2value[self.player]
 
-            best_move_next = self.find_best_action(grid_next)
-            q_next_max = self.q_table[self.get_index(grid_next, best_move_next)]
+            best_move_next = self.find_best_action(grid)
+            q_next_max = self.q_table[self.get_index(grid, best_move_next)]
 
             self.q_table[tab_idx] = self.q_table[tab_idx] + self.alpha * (
                 self.gamma * q_next_max - self.q_table[tab_idx]
