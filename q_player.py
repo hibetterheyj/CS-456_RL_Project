@@ -1,9 +1,10 @@
 import itertools
 import random
 from tkinter.messagebox import NO
-from typing import Tuple
+from typing import Optional, Tuple
 
 import numpy as np
+from pyrsistent import optional
 
 
 class QPlayer:
@@ -28,10 +29,17 @@ class QPlayer:
 
         self.q_table = {}
         for state in itertools.product([0, 1, -1], repeat=9):
-            for action in range(9):
-                if state[action] == 0:
-                    if (np.sum(state) == 0) or (np.sum(state) == -1):
-                        self.q_table.update({state + (action,): 0})
+            # when q_learning player first play, the sum is always 0 if this is its turn
+            # when it is the second player, sum of grid is 1 if this is its turn
+            if (np.sum(state) == 0) or (np.sum(state) == 1):
+                dict_state_temp = {}
+                for action in range(9):
+                    if state[action] == 0:
+                        dict_state_temp.update({action: 0})
+                self.q_table.update({state: dict_state_temp})
+
+        self.prev_state: Optional[Tuple[int]] = None
+        self.prev_action: Optional[int] = None
 
     def empty(self, grid: np.ndarray) -> list[Tuple]:
         """return all empty positions"""
@@ -48,65 +56,66 @@ class QPlayer:
 
         return avail[random.randint(0, len(avail) - 1)]
 
-    def get_index(self, grid: np.ndarray, move: Tuple[int]) -> Tuple[int]:
-        grid = grid * self.player2value[self.player]
-
-        state = tuple(grid.reshape(-1))
-        action = move[0] * 3 + move[1]
-
-        return state + (action,)
-
     def get_q_value(self, grid: np.ndarray, move: Tuple[int]) -> float:
+        # for debug
 
-        return self.q_table[self.get_index(grid, move)]
-
-    def find_best_action(self, grid: np.ndarray) -> Tuple[int]:
-        avails = self.empty(grid)
-
-        current_max_q = -float("inf")
-        best_actions = []
-        for avail in avails:
-            current_q = self.get_q_value(grid, avail)
-            if current_q > current_max_q:
-                best_actions = [
-                    avail,
-                ]
-            elif current_q == current_max_q:
-                best_actions.append(avail)
-
-        return best_actions[random.randint(0, len(best_actions) - 1)]
+        return self.q_table[self.grid_to_state(grid)][move[0] * 3 + move[1]]
 
     def update_q(
         self,
         reward: float,
         grid: np.ndarray,
-        grid_prev: np.ndarray,
-        move_prev: Tuple[int],
         is_end: bool = False,
     ) -> None:
-
-        tab_idx = self.get_index(grid_prev, move_prev)
-
         if is_end:
             # if game ends, no need to find max Q value in next state
 
-            self.q_table[tab_idx] = self.q_table[tab_idx] + self.alpha * (
-                reward - self.q_table[tab_idx]
-            )
+            q_next_max = 0
         else:
-            # if game doesn't end, reward is always zero
-
-            best_move_next = self.find_best_action(grid)
-            q_next_max = self.q_table[self.get_index(grid, best_move_next)]
-
-            self.q_table[tab_idx] = self.q_table[tab_idx] + self.alpha * (
-                self.gamma * q_next_max - self.q_table[tab_idx]
+            current_state = self.grid_to_state(grid)
+            next_action_rank = sorted(
+                zip(
+                    self.q_table[current_state].values(),
+                    self.q_table[current_state].keys(),
+                )
             )
+
+            q_next_max = next_action_rank[-1][0]
+
+        self.q_table[self.prev_state][self.prev_action] = self.q_table[self.prev_state][
+            self.prev_action
+        ] + self.alpha * (
+            reward
+            + self.gamma * q_next_max
+            - self.q_table[self.prev_state][self.prev_action]
+        )
 
     def act(self, grid: np.ndarray, n=0) -> Tuple[int]:
         # whether move in random or not
         epsilon = max(self.epsilon_min, self.epsilon_max * (1 - n / self.n_star))
-        if random.random() < epsilon:
-            return self.randomMove(grid)
 
-        return self.find_best_action(grid)
+        current_state = self.grid_to_state(grid)
+
+        if random.random() < epsilon:
+            move = self.randomMove(grid)
+        else:
+
+            next_action_rank = sorted(
+                zip(
+                    self.q_table[current_state].values(),
+                    self.q_table[current_state].keys(),
+                )
+            )
+
+            best_action = next_action_rank[-1][1]
+            move = (best_action // 3, best_action % 3)
+
+        self.prev_state = current_state
+        self.prev_action = move[0] * 3 + move[1]
+
+        return move
+
+    @staticmethod
+    def grid_to_state(grid: np.ndarray) -> Tuple[int]:
+
+        return tuple(grid.reshape(-1))
