@@ -3,13 +3,14 @@ agent:
   device: "cuda"
   gamma: 0.99 # discount_factor
   r_unav: -1
-  epsilon: 0.1
+  epsilon: 0.01
   memory_capacity: 10000
   exploration:
     active: False
     eps_max: 0.8
     eps_min: 0.1
     n_star: 20000
+  verbose: False
 
 ## trainer-related
 trainer:

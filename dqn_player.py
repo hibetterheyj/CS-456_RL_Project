@@ -2,6 +2,7 @@ import copy
 import random
 from typing import List, Dict, Tuple
 from collections import namedtuple, deque
+from tqdm import tqdm
 
 import numpy as np
 import torch
@@ -120,9 +121,7 @@ class DQNPlayer:
         self.memory = ReplayMemory(self.buffer_sz)
         self.last_state = None
         self.last_action = None
-        self.last_reward = None
         self.losses = []
-        self.avg_losses = []
         self.m_opts = []
         self.m_rands = []
 
@@ -186,10 +185,10 @@ class DQNPlayer:
         self.last_state = grid2state(grid.copy(), self.player)
         return action
 
-    def one_game_expert(self, agent, env, i, train=True):
+    def one_game_expert(self, agent, env, episode, train=True) -> str:
         # init
         grid, end, __ = env.observe()
-        if i % 2 == 0:
+        if episode % 2 == 0:
             self.player = 'X'
             agent.player = 'O'
         else:
@@ -198,7 +197,7 @@ class DQNPlayer:
 
         # simulation
         invalid_move = False
-        while end == False:
+        while not end:
             if env.current_player == self.player:
                 move = self.select_action(grid)
                 # print(type(move))
@@ -235,19 +234,19 @@ class DQNPlayer:
             self.optimize()
         return winner
 
-    def multi_games_expert(self, agent, env, episodes):
-        N_win = 0
-        N_loose = 0
+    def multi_games_expert(self, expert, env, episodes):
+        win = 0
+        los = 0
         for j in range(episodes):
             env.reset()
-            winner = self.one_game_expert(agent, env, 0, train=False)
+            winner = self.one_game_expert(expert, env, 0, train=False)
 
             if winner == self.player:
-                N_win += 1
-            elif winner == agent.player:
-                N_loose += 1
+                win += 1
+            elif winner == expert.player:
+                los += 1
 
-        return (N_win - N_loose) / episodes
+        return (win - los) / episodes
 
     def compute_metrics(self, episodes: int = 500) -> None:
         """Compute m_opt and m_rand from 500 games by measureing
@@ -288,7 +287,7 @@ class DQNPlayer:
         first_move = True
         self.player = 'X'
         self_copy.player = 'O'
-        while end == False:
+        while not end:
             self_copy.policy.load_state_dict(self.policy.state_dict())
             self.optimize()
             if env.current_player == 'X':
@@ -304,7 +303,7 @@ class DQNPlayer:
                     )
                 first_move = False
             else:
-                move = self_copy.act(grid)
+                move = self_copy.select_action(grid)
                 grid, end, winner = env.step(move, print_grid=False)
                 if winner != 'X':
                     reward = env.reward('X')
@@ -332,8 +331,6 @@ class DQNPlayer:
 
     def optimize(self):
         if len(self.memory) >= self.batch_sz:
-            # train phase
-
             # sample mini-batch from memory
             # state, action, reward, next_state = self.memory.sample(self.batch_sz)
             transitions = self.memory.sample(self.batch_sz)
@@ -355,12 +352,12 @@ class DQNPlayer:
             )
 
             # calculate "target" Q-values from Q-Learning update rule
-            mask = (~reward_batch.abs().bool()).int()
+            non_final_mask = (~reward_batch.abs().bool()).int()
             # Compute the expected Q values
             expected_state_action_values = (
                 reward_batch
                 + self.gamma
-                * mask
+                * non_final_mask
                 * self.target(next_state_batch).max(dim=1)[0].detach()
             )
 
@@ -374,32 +371,33 @@ class DQNPlayer:
             self.policy.optimizer.step()
             self.losses.append(loss.detach().numpy())
 
-    def learn(
+    def train(
         self,
         agent=None,
         nr_episodes: int = 20000,
         val_interval: int = 250,
         self_practice: bool = False,
-        save_avg_losses: bool = True,
         save_model: bool = False,
         ckpt_name: str = None,
     ) -> List[float]:
-        """_summary_
+        """Training pipeline for DQNPlayer
 
         Args:
             agent (optional): agent to play against for policy learning
             nr_episodes (int, optional): number of learning episodes. Defaults to 20000.
             val_interval (int, optional): _description_. Defaults to 250.
             self_practice (bool, optional): _description_. Defaults to False.
+            save_model (bool, optional): _description_. Defaults to False.
             save_avg_losses (bool, optional): _description_. Defaults to True.
 
         Returns:
             List[float]: rewards along the learning procedures
         """
         rewards = []
+        avg_losses = []
         env = TictactoeEnv()
         self_copy = self.copy()
-        for episode in range(0, nr_episodes):
+        for episode in tqdm(range(nr_episodes)):
             env.reset()
             self.counter += 1
             if self_practice:
@@ -415,7 +413,6 @@ class DQNPlayer:
                 if episode % self.target_update == 0:
                     self.target.load_state_dict(self.policy.state_dict())
 
-            # save results
             if winner == self.player:
                 rewards.append(1)
             elif winner == agent.player:
@@ -426,19 +423,18 @@ class DQNPlayer:
             if episode % val_interval == 0:
                 self.compute_metrics()
 
-            if episode > 250 and episode % 250 == 0:
+            if episode + 1 >= val_interval and (episode + 1) % val_interval == 0:
+                avg_loss = np.mean(np.array(self.losses))
+                self.losses = []
+                avg_losses.append(avg_loss)
                 if self.verbose:
                     avg_reward = np.mean(rewards[-250:])
-                    print(f'Avg reward: {avg_reward}')
-                if save_avg_losses:
-                    recent_loss = np.mean(np.array(self.losses))
-                    if self.verbose:
-                        print(f'{self.counter}: {recent_loss}')
-                    self.avg_losses.append(recent_loss)
-                    self.losses = []
+                    print(
+                        f'# {self.counter}:\navg_loss: {avg_loss}\navg_reward: {avg_reward}'
+                    )
 
         if save_model:
             torch.save(self.policy.state_dict(), f'{ckpt_name}.pth')
             print(f"Save policy as {ckpt_name}.pth!")
 
-        return rewards
+        return rewards, avg_losses

@@ -88,26 +88,6 @@ def decreasing_exploration(
     return max(e_min, e_max * (1 - n_step / n_star))
 
 
-def window_avg_plot(axes, var: np.array, window_sz: int = 250) -> np.array:
-    """Computes the average over successive windows of an array and plot correspoding plot
-
-    Args:
-        axes (_type_): _description_
-        var (np.array): _description_
-        window_sz (int, optional): _description_. Defaults to 250.
-
-    Returns:
-        np.array: _description_
-    """
-
-    var_np = np.array(var)
-    avg_var = np.empty((int(var_np.shape[0] / window_sz),))
-    for i in range(0, int(var_np.shape[0] / window_sz)):
-        avg_var[i] = var_np[window_sz * i : window_sz * (i + 1) - 1].sum() / window_sz
-    episodes = np.linspace(0, avg_var.shape[0], avg_var.shape[0]) * window_sz
-    axes.plot(episodes, avg_var)
-
-
 #%% test cases for given function
 def test_grid_to_state():
     from tic_env import TictactoeEnv
@@ -124,12 +104,3 @@ def test_grid_to_state():
     # print(test_state2[:,:,0], test_state2[:,:,1])
     assert np.array_equal(test_state1[:, :, 0], test_state2[:, :, 1])
     assert np.array_equal(test_state2[:, :, 0], test_state1[:, :, 1])
-
-
-def test_window_avg_plot():
-    import numpy as np
-    import matplotlib.pyplot as plt
-
-    _, ax = plt.subplots(figsize=(10, 4))
-    rewards_example = np.linspace(-1, 1, 20000) + np.random.rand(20000)
-    window_avg_plot(axes=ax, var=rewards_example, window_sz=20)
