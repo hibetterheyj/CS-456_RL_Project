@@ -10,9 +10,12 @@ from tqdm import tqdm
 
 # customized
 from tic_env import TictactoeEnv, OptimalPlayer
-from dqn_player import DQNPlayer
 from dqn_utils import *
+from dqn_player import DQNPlayer, setup_seed
 from viz_utils import reward_loss_plots, metrics_plots, mul_metrics_plots
+
+# setup seed for random, numpy, and torch
+setup_seed(2022)
 
 os.makedirs('plot', exist_ok=True)
 os.makedirs('res', exist_ok=True)
@@ -38,11 +41,9 @@ print(epsilon_list)
 
 
 def single_run():
-    agent = DQNPlayer(epsilon=0.01)
+    agent = DQNPlayer(epsilon=0.01, verbose=True)
     expert = OptimalPlayer(0.5)
-    rewards, losses = agent.train(
-        expert, nr_episodes=20000, val_interval=val_interval(10, 6)
-    )
+    rewards, losses = agent.train(expert, nr_episodes=20000, val_interval=val_interval)
 
     ## viz
     reward_loss_plots(rewards, losses, save_dir='plot', save_fn=save_prefix)
@@ -71,7 +72,7 @@ def multi_runs():
         agent = DQNPlayer(epsilon=eps, verbose=False)
         expert = OptimalPlayer(0.5)
         rewards, losses = agent.train(
-            expert, nr_episodes=20000, val_interval=val_interval(10, 6)
+            expert, nr_episodes=20000, val_interval=val_interval
         )
 
         ## data collection

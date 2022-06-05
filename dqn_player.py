@@ -10,12 +10,7 @@
 """
 # =============================================================================
 """
-The module provides ...
-"""
-# =============================================================================
-"""
-TODO:
-1. add print function to show key parameters!!!
+The module provides class and utility functions for DQN method
 """
 # =============================================================================
 
@@ -32,6 +27,19 @@ import torch.nn.functional as F
 
 from tic_env import TictactoeEnv, OptimalPlayer
 from dqn_utils import grid2state, decreasing_exploration, position2move
+
+# all random seed
+def setup_seed(seed: int) -> None:
+    """setup random seed for random, numpy, and torch
+
+    Args:
+        seed (int): random seed
+    """
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
 
 
 # default parameters
@@ -115,7 +123,7 @@ class DQNPlayer:
         eps_max=0.8,
         n_star=N_STAR,
         device: torch.device = None,
-        verbose: bool = True,
+        verbose: bool = False,
         **kwargs,
     ):
         # init variables
@@ -424,7 +432,7 @@ class DQNPlayer:
         save_model: bool = False,
         ckpt_name: str = None,
     ) -> List[float]:
-        """Training pipeline with expert for DQNPlayer
+        """Training pipeline by self-practice for DQNPlayer
 
         Args:
             nr_episodes (int, optional): number of learning episodes. Defaults to 20000.

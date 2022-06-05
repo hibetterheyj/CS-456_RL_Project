@@ -1,3 +1,6 @@
+"""
+_summary_: Training with decreasing eps given different values of n*
+"""
 # std
 import os
 from typing import List, Dict, Tuple
@@ -10,9 +13,12 @@ from tqdm import tqdm
 
 # customized
 from tic_env import TictactoeEnv, OptimalPlayer
-from dqn_player import DQNPlayer
 from dqn_utils import *
+from dqn_player import DQNPlayer, setup_seed
 from viz_utils import reward_loss_plots, metrics_plots, mul_metrics_plots
+
+# setup seed for random, numpy, and torch
+setup_seed(2022)
 
 os.makedirs('plot', exist_ok=True)
 os.makedirs('res', exist_ok=True)
@@ -43,7 +49,7 @@ def get_res_from_tests():
             verbose=False,
         )
         rewards, losses = agent.train(
-            expert, nr_episodes=20000, val_interval=val_interval(10, 6)
+            expert, nr_episodes=20000, val_interval=val_interval
         )
 
         ## data collection
