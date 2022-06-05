@@ -1,3 +1,24 @@
+#!/usr/bin/env python3
+# -*-coding:utf-8 -*-
+# =============================================================================
+"""
+@Author        :   Yujie He
+@File          :   dqn_player.py
+@Date created  :   2022/06/05
+@Maintainer    :   Yujie He
+@Email         :   yujie.he@epfl.ch
+"""
+# =============================================================================
+"""
+The module provides ...
+"""
+# =============================================================================
+"""
+TODO:
+1. add print function to show key parameters!!!
+"""
+# =============================================================================
+
 import copy
 import random
 from typing import List, Dict, Tuple
