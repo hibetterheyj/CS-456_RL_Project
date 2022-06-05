@@ -1,10 +1,34 @@
 import os
+from turtle import color
 from typing import Optional, Union, Tuple, List, Dict
 from pathlib import Path
 
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+def values2color_dict(
+    value_list, cmap='hot', range=(0.2, 0.7), reverse=True, given_values=None
+):
+    value_unique = np.unique(value_list)
+    value_len = len(value_unique)
+    cmap = matplotlib.cm.get_cmap(cmap)
+    if given_values is not None:
+        value_normalized = given_values
+    else:
+        value_normalized = np.linspace(range[0], range[1], num=value_len)
+    if reverse:
+        value_normalized = np.flip(value_normalized)
+    val2color = {}
+    for value in value_unique:
+        index = np.where(value_unique == value)[0][0]
+        # color_unique.append(cmap(value_normalized[index]))
+        color = cmap(value_normalized[index])
+        val2color.update({value: color})
+
+    return val2color
 
 
 def window_avg_plot(
@@ -103,8 +127,10 @@ def mul_metrics_plots(
     save_dir: Union[Path, str] = 'plot',
     save_fn: Optional[str] = None,
     suffix: str = '_metrics_mul',
-    xlim_max: float = 24000.0,
+    xlim_max: float = 26000.0,
     viz_fig: bool = False,
+    cmap: Optional[str] = 'hot',
+    include_max: bool = True,
 ) -> None:
     fig, axes = plt.subplots(2, 1, figsize=figsize)
 
@@ -114,21 +140,41 @@ def mul_metrics_plots(
     label_prefix = ''
     if val4label is not None:
         label_prefix += f'{val4label} ='
+    val2color = values2color_dict(val_list, cmap=cmap)
     # m_opts
-    for val in val_list:
-        # game_idx = list(metrics_dict["M_rand"][val].keys())
-
+    ls_set = ['-', '--', '-.']
+    for idx, val in enumerate(val_list):
         if label_latex:
             label_name = f'${label_prefix} {val}$'
         else:
             label_name = f'{label_prefix} {val}'
         # m_opts
+        label_name_opt = label_name
         M_opt = metrics_dict["M_opt"][val]
-        axes[0].plot(game_idx, M_opt, '--', label=label_name)
+        if include_max:
+            label_name_opt += ' (max: {:.3f})'.format(max(M_opt))
+        axes[0].plot(
+            game_idx,
+            M_opt,
+            ls=ls_set[idx % len(ls_set)],
+            color=val2color[val],
+            label=label_name_opt,
+            lw=2,
+        )
 
         # m_rands
+        label_name_rand = label_name
         M_rand = metrics_dict["M_rand"][val]
-        axes[1].plot(game_idx, M_rand, '--', label=label_name)
+        if include_max:
+            label_name_rand += f' (max: {max(M_rand)})'
+        axes[1].plot(
+            game_idx,
+            M_rand,
+            ls=ls_set[idx % len(ls_set)],
+            color=val2color[val],
+            label=label_name_rand,
+            lw=2,
+        )
 
     axes[0].set_ylabel('$m_{opt}$')
     axes[0].legend(title='$M_{opt}$')
