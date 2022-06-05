@@ -1,6 +1,51 @@
 import matplotlib.pyplot as plt
+from pathlib import Path
+import typing
 import numpy as np
 import torch
+import yaml
+
+
+def position2move(action):
+    """Converts the tuple encoding of a board position to integer value."""
+    return action[0] * 3 + action[1]
+
+
+def load_yaml(path: typing.Union[str, Path]):
+    with open(path) as file:
+        res = yaml.load(file, Loader=yaml.FullLoader)
+    return res
+
+
+def grid2state(
+    grid: np.array,
+    player: bool = False,
+    vec: bool = True,
+) -> torch.tensor:
+    """If not switched, 1 and -1 on the grid means X and O, and vice versa
+
+    Args:
+        grid (np.array): _description_
+        player (bool, optional): _description_. Defaults to False.
+        vec (bool, optional): _description_. Defaults to True.
+
+    Returns:
+        np.array: _description_
+    """
+
+    state = np.zeros((3, 3, 2))
+
+    if player == 'X':
+        state[:, :, 0] = (grid == 1).astype(float)
+        state[:, :, 1] = (grid == -1).astype(float)
+    else:
+        state[:, :, 0] = (grid == -1).astype(float)
+        state[:, :, 1] = (grid == 1).astype(float)
+
+    if vec:
+        state = state.reshape(1, -1)
+
+    return torch.tensor(state, dtype=torch.float)
 
 
 def grid_to_state(
