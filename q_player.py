@@ -41,7 +41,7 @@ class QPlayer:
         self.prev_state: Optional[Tuple[int]] = None
         self.prev_action: Optional[int] = None
 
-    def empty(self, grid: np.ndarray) -> list[Tuple]:
+    def empty(self, grid: np.ndarray) -> "list[Tuple]":
         """return all empty positions"""
         avail = []
         for i in range(9):
@@ -50,13 +50,13 @@ class QPlayer:
                 avail.append(pos)
         return avail
 
-    def randomMove(self, grid: np.ndarray) -> Tuple[int]:
+    def randomMove(self, grid: np.ndarray) -> "Tuple[int]":
         """Chose a random move from the available options."""
         avail = self.empty(grid)
 
         return avail[random.randint(0, len(avail) - 1)]
 
-    def get_q_value(self, grid: np.ndarray, move: Tuple[int]) -> float:
+    def get_q_value(self, grid: np.ndarray, move: "Tuple[int]") -> float:
         # for debug
 
         return self.q_table[self.grid_to_state(grid)][move[0] * 3 + move[1]]
@@ -90,7 +90,7 @@ class QPlayer:
             - self.q_table[self.prev_state][self.prev_action]
         )
 
-    def act(self, grid: np.ndarray, n=0) -> Tuple[int]:
+    def act(self, grid: np.ndarray, n=0) -> "Tuple[int]":
         # whether move in random or not
         epsilon = max(self.epsilon_min, self.epsilon_max * (1 - n / self.n_star))
 
@@ -116,6 +116,6 @@ class QPlayer:
         return move
 
     @staticmethod
-    def grid_to_state(grid: np.ndarray) -> Tuple[int]:
+    def grid_to_state(grid: np.ndarray) -> "Tuple[int]":
 
         return tuple(grid.reshape(-1))
