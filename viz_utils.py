@@ -48,6 +48,7 @@ def reward_loss_plots(
     save_dir: Union[Path, str] = 'plot',
     save_fn: Optional[str] = None,
     suffix: str = '_reward_loss',
+    viz_fig: bool = False,
 ) -> None:
     fig, axes = plt.subplots(2, 1, figsize=figsize)
     axes[0].plot([250 * (i + 1) for i in range(len(losses))], losses)
@@ -59,7 +60,8 @@ def reward_loss_plots(
     if save_fn is not None:
         fig.tight_layout()
         plt.savefig(os.path.join(save_dir, save_fn + suffix + '.pdf'), dpi=300)
-        plt.show()
+        if viz_fig:
+            plt.show()
 
 
 def metrics_plots(
@@ -71,6 +73,7 @@ def metrics_plots(
     save_dir: Union[Path, str] = 'plot',
     save_fn: Optional[str] = None,
     suffix: str = '_metrics',
+    viz_fig: bool = False,
 ) -> None:
     fig, axes = plt.subplots(2, 1, figsize=figsize)
     base = [val_interval * (i + 1) for i in range(len(m_opts))]
@@ -85,7 +88,8 @@ def metrics_plots(
     if save_fn is not None:
         fig.tight_layout()
         plt.savefig(os.path.join(save_dir, save_fn + suffix + '.pdf'), dpi=300)
-        plt.show()
+        if viz_fig:
+            plt.show()
 
 
 def mul_metrics_plots(
@@ -93,12 +97,14 @@ def mul_metrics_plots(
     val_list: List[float] = None,  # n_star_list | eps_list
     val4label: Optional[str] = None,  # n^{*} | {\epsilon}_{opt}
     label_latex: bool = True,
-    figsize: Tuple[float] = (10, 10),
+    figsize: Tuple[float] = (10, 6),
     val_interval: int = 250,
     figtitle: Optional[str] = None,
     save_dir: Union[Path, str] = 'plot',
     save_fn: Optional[str] = None,
     suffix: str = '_metrics_mul',
+    xlim_max: float = 24000.0,
+    viz_fig: bool = False,
 ) -> None:
     fig, axes = plt.subplots(2, 1, figsize=figsize)
 
@@ -118,18 +124,20 @@ def mul_metrics_plots(
             label_name = f'{label_prefix} {val}'
         # m_opts
         M_opt = metrics_dict["M_opt"][val]
-        axes[1].plot(game_idx, M_opt, '--', label=label_name)
+        axes[0].plot(game_idx, M_opt, '--', label=label_name)
 
         # m_rands
         M_rand = metrics_dict["M_rand"][val]
-        axes[1].plot(game_idx, M_rand, '--', label="$n^{*}=$" + str(val))
+        axes[1].plot(game_idx, M_rand, '--', label=label_name)
 
     axes[0].set_ylabel('$m_{opt}$')
-    axes[0].legend()
+    axes[0].legend(title='$M_{opt}$')
+    axes[0].set_xlim([0, xlim_max])
 
     axes[1].set_ylabel('$m_{rand}$')
     axes[1].set_xlabel('Episode')
-    axes[1].legend()
+    axes[1].legend(title='$M_{rand}$')
+    axes[1].set_xlim([0, xlim_max])
 
     if figtitle is not None:
         fig.suptitle(figtitle)
@@ -137,7 +145,8 @@ def mul_metrics_plots(
     if save_fn is not None:
         fig.tight_layout()
         plt.savefig(os.path.join(save_dir, save_fn + suffix + '.pdf'), dpi=300)
-        plt.show()
+        if viz_fig:
+            plt.show()
 
 
 def test_window_avg_plot():
