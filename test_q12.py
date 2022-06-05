@@ -21,7 +21,7 @@ val_interval = 250
 agent = DQNPlayer(epsilon=0.01, buffer_sz=1, batch_sz=1)
 expert = OptimalPlayer(0.5)
 rewards, losses = agent.train(
-    expert, nr_episodes=20000, val_interval=val_interval, self_practice=False
+    expert, nr_episodes=20000, val_interval=val_interval(10, 6)
 )
 
 ## viz

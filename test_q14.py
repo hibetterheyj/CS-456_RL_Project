@@ -51,7 +51,7 @@ def get_res_from_tests():
         )
         expert = OptimalPlayer(epsilon=eps_opt)
         rewards, losses = agent.train(
-            expert, nr_episodes=20000, val_interval=val_interval, self_practice=False
+            expert, nr_episodes=20000, val_interval=val_interval
         )
 
         ## data collection

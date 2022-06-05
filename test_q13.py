@@ -43,7 +43,7 @@ def get_res_from_tests():
             verbose=False,
         )
         rewards, losses = agent.train(
-            expert, nr_episodes=20000, val_interval=val_interval, self_practice=False
+            expert, nr_episodes=20000, val_interval=val_interval(10, 6)
         )
 
         ## data collection

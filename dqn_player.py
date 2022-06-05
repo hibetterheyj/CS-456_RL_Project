@@ -295,7 +295,7 @@ class DQNPlayer:
         self.explore = explore_
 
     def one_game_self(self, env, self_copy) -> str:
-        """self practice
+        """Play one game and learn from self practice
 
         Args:
             env: gym-like environment
@@ -308,12 +308,17 @@ class DQNPlayer:
         first_move = True
         self.player = 'X'
         self_copy.player = 'O'
+        invalid_move = False
         while not end:
             self_copy.policy.load_state_dict(self.policy.state_dict())
             self.optimize()
             if env.current_player == 'X':
                 move = self.select_action(grid)
-                grid, end, winner = env.step(move, print_grid=False)
+                if env.check_valid(move):
+                    grid, end, winner = env.step(move, print_grid=False)
+                else:
+                    end, winner = True, self_copy.player
+                    invalid_move = True
                 if not first_move and winner != 'O':
                     reward = env.reward('O')
                     self.memory.push(
@@ -325,7 +330,11 @@ class DQNPlayer:
                 first_move = False
             else:
                 move = self_copy.select_action(grid)
-                grid, end, winner = env.step(move, print_grid=False)
+                if env.check_valid(move):
+                    grid, end, winner = env.step(move, print_grid=False)
+                else:
+                    end, winner = True, self.player
+                    invalid_move = True
                 if winner != 'X':
                     reward = env.reward('X')
                     self.memory.push(
@@ -334,18 +343,34 @@ class DQNPlayer:
                         reward,
                         grid2state(grid.copy(), 'X'),
                     )
-
-        reward = env.reward('X')
-        self.memory.push(
-            self.last_state, self.last_action, reward, grid2state(grid.copy(), 'X')
-        )
-        reward = env.reward('O')
-        self.memory.push(
-            self_copy.last_state,
-            self_copy.last_action,
-            reward,
-            grid2state(grid.copy(), 'O'),
-        )
+        if not invalid_move:
+            reward = env.reward('X')
+            self.memory.push(
+                self.last_state, self.last_action, reward, grid2state(grid.copy(), 'X')
+            )
+            reward = env.reward('O')
+            self.memory.push(
+                self_copy.last_state,
+                self_copy.last_action,
+                reward,
+                grid2state(grid.copy(), 'O'),
+            )
+        elif invalid_move and winner == self_copy.player:
+            reward = R_UNAV
+            self.memory.push(
+                self.last_state,
+                self.last_action,
+                reward,
+                grid2state(grid.copy(), self.player),
+            )
+        elif invalid_move and winner == self.player:
+            reward = 1
+            self.memory.push(
+                self.last_state,
+                self.last_action,
+                reward,
+                grid2state(grid.copy(), self.player),
+            )
         self_copy.policy.load_state_dict(self.policy.state_dict())
         self.optimize()
         return winner
@@ -392,27 +417,86 @@ class DQNPlayer:
             self.policy.optimizer.step()
             self.losses.append(loss.detach().numpy())
 
-    def train(
+    def self_train(
         self,
-        agent=None,
         nr_episodes: int = 20000,
         val_interval: int = 250,
-        self_practice: bool = False,
         save_model: bool = False,
         ckpt_name: str = None,
     ) -> List[float]:
-        """Training pipeline for DQNPlayer
+        """Training pipeline with expert for DQNPlayer
 
         Args:
-            agent (optional): agent to play against for policy learning
             nr_episodes (int, optional): number of learning episodes. Defaults to 20000.
             val_interval (int, optional): _description_. Defaults to 250.
-            self_practice (bool, optional): _description_. Defaults to False.
             save_model (bool, optional): _description_. Defaults to False.
             save_avg_losses (bool, optional): _description_. Defaults to True.
 
         Returns:
             List[float]: rewards along the learning procedures
+            List[float]: average loss along the learning procedures
+        """
+        print('USE SELF-PRACTICE MODE!')
+
+        rewards = []
+        avg_losses = []
+        env = TictactoeEnv()
+        self_copy = self.copy()
+        for episode in tqdm(range(nr_episodes)):
+            env.reset()
+            self.counter += 1
+            winner = self.one_game_self(env, self_copy)
+
+            if episode % self.target_update == 0:
+                self.target.load_state_dict(self.policy.state_dict())
+                self_copy.target.load_state_dict(self.policy.state_dict())
+
+            if winner == self.player:
+                rewards.append(1)
+            elif winner == None:
+                rewards.append(0)
+            else:
+                rewards.append(-1)
+
+            if episode % val_interval == 0:
+                self.compute_metrics()
+
+            if episode + 1 >= val_interval and (episode + 1) % val_interval == 0:
+                avg_loss = np.mean(np.array(self.losses))
+                self.losses = []
+                avg_losses.append(avg_loss)
+                if self.verbose:
+                    avg_reward = np.mean(rewards[-250:])
+                    print(
+                        f'# {self.counter}:\navg_loss: {avg_loss}\navg_reward: {avg_reward}'
+                    )
+
+        if save_model:
+            torch.save(self.policy.state_dict(), f'{ckpt_name}.pth')
+            print(f"Save policy as {ckpt_name}.pth!")
+
+        return rewards, avg_losses
+
+    def train(
+        self,
+        agent,
+        nr_episodes: int = 20000,
+        val_interval: int = 250,
+        save_model: bool = False,
+        ckpt_name: str = None,
+    ) -> List[float]:
+        """Training pipeline with expert for DQNPlayer
+
+        Args:
+            agent: agent to play against for policy learning
+            nr_episodes (int, optional): number of learning episodes. Defaults to 20000.
+            val_interval (int, optional): _description_. Defaults to 250.
+            save_model (bool, optional): _description_. Defaults to False.
+            save_avg_losses (bool, optional): _description_. Defaults to True.
+
+        Returns:
+            List[float]: rewards along the learning procedures
+            List[float]: average loss along the learning procedures
         """
         rewards = []
         avg_losses = []
@@ -421,25 +505,17 @@ class DQNPlayer:
         for episode in tqdm(range(nr_episodes)):
             env.reset()
             self.counter += 1
-            if self_practice:
-                winner = self.one_game_self(env, self_copy)
+            winner = self.one_game_expert(agent, env, episode, train=True)
 
-                if episode % self.target_update == 0:
-                    self.target.load_state_dict(self.policy.state_dict())
-                    self_copy.target_network.load_state_dict(self.policy.state_dict())
-
-            else:
-                winner = self.one_game_expert(agent, env, episode, train=True)
-
-                if episode % self.target_update == 0:
-                    self.target.load_state_dict(self.policy.state_dict())
+            if episode % self.target_update == 0:
+                self.target.load_state_dict(self.policy.state_dict())
 
             if winner == self.player:
                 rewards.append(1)
-            elif winner == agent.player:
-                rewards.append(-1)
-            else:
+            elif winner == None:
                 rewards.append(0)
+            else:
+                rewards.append(-1)
 
             if episode % val_interval == 0:
                 self.compute_metrics()

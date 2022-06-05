@@ -1,4 +1,6 @@
 # Folders
+plot
+res
 archive
 *.pth
 
