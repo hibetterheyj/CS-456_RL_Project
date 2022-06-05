@@ -61,7 +61,7 @@ def single_run():
     # res = np.load(os.path.join('res', save_prefix + '.npz'))
 
 
-def multi_runs(include_max):
+def multi_runs(include_max, include_last):
     for idx, eps in enumerate(epsilon_list):
         print(f'{idx+1}/{len(epsilon_list)}: eps = {eps}')
 
@@ -97,16 +97,17 @@ def multi_runs(include_max):
         mul_metrics_plots(
             metrics_dict=metrics_dict,
             val_list=epsilon_list,
-            val4label='{\epsilon}_{opt}',
+            val4label='{\epsilon}',
             label_latex=True,
             figsize=(10, 6),
             save_dir='plot',
             save_fn=save_prefix,
             include_max=include_max,
+            include_last=include_last,
         )
 
 
-def get_res_from_saves(include_max):
+def get_res_from_saves(include_max, include_last):
     for idx, eps in enumerate(epsilon_list):
         inside_prefix = save_prefix + f'_eps{eps}'
         res = np.load(os.path.join('res', inside_prefix + '.npz'))
@@ -120,16 +121,17 @@ def get_res_from_saves(include_max):
         mul_metrics_plots(
             metrics_dict=metrics_dict,
             val_list=epsilon_list,
-            val4label='{\epsilon}_{opt}',
+            val4label='{\epsilon}',
             label_latex=True,
             figsize=(10, 6),
             save_dir='plot',
             save_fn=save_prefix,
             include_max=include_max,
+            include_last=include_last,
         )
 
 
 if __name__ == "__main__":
     # single_run()
-    # multi_runs(include_max=True)
-    get_res_from_saves(include_max=True)
+    # multi_runs(include_max=False, include_last=True)
+    get_res_from_saves(include_max=False, include_last=True)
