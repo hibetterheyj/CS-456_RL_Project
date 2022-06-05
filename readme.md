@@ -12,6 +12,7 @@ In this mini-project, our goal is to use Q-Learning and Deep Q-Learning to train
 
 ```python
 conda create -n ann python=3.7
+conda activate ann
 conda install -y numpy
 conda install -y matplotlib
 
@@ -19,7 +20,8 @@ conda install -y matplotlib
 python -m pip install notebook
 conda install -c conda-forge ipywidgets -y
 python -m pip install jupyter_contrib_nbextensions
-jupyter contrib nbextension install --user
+pip install nbconvert==6.4.3
+# jupyter contrib nbextension install --user
 
 # CUDA 11.3 with torch
 conda install -y pytorch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1 cudatoolkit=11.3 -c pytorch -c conda-forge
