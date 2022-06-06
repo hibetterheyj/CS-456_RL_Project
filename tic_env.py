@@ -1,10 +1,11 @@
 # import gym
-import numpy as np
 import random
+
+import numpy as np
 
 
 class TictactoeEnv:
-    '''
+    """
     Description:
         Classical Tic-tac-toe game for two players who take turns marking the spaces in a three-by-three grid with X or O.
         The player who succeeds in placing three of their marks in a horizontal, vertical, or diagonal row is the winner.
@@ -24,21 +25,20 @@ class TictactoeEnv:
     The action space is [0-8], representing the 9 positions on the grid.
 
     The reward is 1 if you win the game, -1 if you lose, and 0 besides.
-    '''
+    """
 
     def __init__(self):
-        self.grid = np.zeros((3,3))
+        self.grid = np.zeros((3, 3))
         self.end = False
         self.winner = None
-        self.player2value = {'X': 1, 'O': -1}
+        self.player2value = {"X": 1, "O": -1}
         self.num_step = 0
-        self.current_player = 'X' # By default, player 'X' goes first
+        self.current_player = "X"  # By default, player 'X' goes first
 
     def check_valid(self, position):
-        ''' Check whether the current action is valid or not
-        '''
+        """Check whether the current action is valid or not"""
         if self.end:
-            raise ValueError('This game has ended, please reset it!')
+            raise ValueError("This game has ended, please reset it!")
         if type(position) is int:
             position = (int(position / 3), position % 3)
         elif type(position) is not tuple:
@@ -47,24 +47,25 @@ class TictactoeEnv:
         return False if self.grid[position] != 0 else True
 
     def step(self, position, print_grid=False):
-        ''' Receive the movement from two players in turn and update the grid
-        '''
+        """Receive the movement from two players in turn and update the grid"""
         # check the position and value are valid or not
         # position should be a tuple like (0, 1) or int [0-8]
         if self.end:
-            raise ValueError('This game has ended, please reset it!')
+            raise ValueError("This game has ended, please reset it!")
         if type(position) is int:
             position = (int(position / 3), position % 3)
         elif type(position) is not tuple:
             position = tuple(position)
         if self.grid[position] != 0:
-            raise ValueError('There is already a chess on position {}.'.format(position))
+            raise ValueError(
+                "There is already a chess on position {}.".format(position)
+            )
 
         # place a chess on the position
         self.grid[position] = self.player2value[self.current_player]
         # update
         self.num_step += 1
-        self.current_player = 'X' if self.num_step % 2 == 0 else  'O'
+        self.current_player = "X" if self.num_step % 2 == 0 else "O"
         # check whether the game ends or not
         self.checkEnd()
 
@@ -78,41 +79,51 @@ class TictactoeEnv:
 
     def checkEnd(self):
         # check rows and cols
-        if np.any(np.sum(self.grid, axis=0) == 3) or np.any(np.sum(self.grid, axis=1) == 3):
+        if np.any(np.sum(self.grid, axis=0) == 3) or np.any(
+            np.sum(self.grid, axis=1) == 3
+        ):
             self.end = True
-            self.winner = 'X'
-        elif np.any(np.sum(self.grid, axis=0) == -3) or np.any(np.sum(self.grid, axis=1) == -3):
+            self.winner = "X"
+        elif np.any(np.sum(self.grid, axis=0) == -3) or np.any(
+            np.sum(self.grid, axis=1) == -3
+        ):
             self.end = True
-            self.winner = 'O'
+            self.winner = "O"
         # check diagnols
-        elif self.grid[[0,1,2],[0,1,2]].sum() == 3 or self.grid[[0,1,2],[2,1,0]].sum() == 3:
+        elif (
+            self.grid[[0, 1, 2], [0, 1, 2]].sum() == 3
+            or self.grid[[0, 1, 2], [2, 1, 0]].sum() == 3
+        ):
             self.end = True
-            self.winner = 'X'
-        elif self.grid[[0,1,2],[0,1,2]].sum() == -3 or self.grid[[0,1,2],[2,1,0]].sum() == -3:
+            self.winner = "X"
+        elif (
+            self.grid[[0, 1, 2], [0, 1, 2]].sum() == -3
+            or self.grid[[0, 1, 2], [2, 1, 0]].sum() == -3
+        ):
             self.end = True
-            self.winner = 'O'
+            self.winner = "O"
         # check if all the positions are filled
         elif (self.grid == 0).sum() == 0:
             self.end = True
-            self.winner = None # no one wins
+            self.winner = None  # no one wins
         else:
             self.end = False
             self.winner = None
 
     def reset(self):
         # reset the grid
-        self.grid = np.zeros((3,3))
+        self.grid = np.zeros((3, 3))
         self.end = False
         self.winner = None
         self.num_step = 0
-        self.current_player = 'X'
+        self.current_player = "X"
 
         return self.grid.copy(), self.end, self.winner
 
     def observe(self):
         return self.grid.copy(), self.end, self.winner
 
-    def reward(self, player='X'):
+    def reward(self, player="X"):
         if self.end:
             if self.winner is None:
                 return 0
@@ -123,16 +134,17 @@ class TictactoeEnv:
 
     def render(self):
         # print current grid
-        value2player = {0: '-', 1: 'X', -1: 'O'}
+        value2player = {0: "-", 1: "X", -1: "O"}
         for i in range(3):
-            print('|', end='')
+            print("|", end="")
             for j in range(3):
-                print(value2player[int(self.grid[i,j])], end=' ' if j<2 else '')
-            print('|')
+                print(value2player[int(self.grid[i, j])], end=" " if j < 2 else "")
+            print("|")
         print()
 
+
 class OptimalPlayer:
-    '''
+    """
     Description:
         A class to implement an epsilon-greedy optimal player in Tic-tac-toe.
 
@@ -147,30 +159,31 @@ class OptimalPlayer:
             probability of making a random action instead of the optimal action
             at any given time.
 
-    '''
-    def __init__(self, epsilon=0.2, player='X'):
-        self.epsilon = epsilon
-        self.player = player # 'x' or 'O'
+    """
 
-    def set_player(self, player = 'X', j=-1):
+    def __init__(self, epsilon=0.2, player="X"):
+        self.epsilon = epsilon
+        self.player = player  # 'x' or 'O'
+
+    def set_player(self, player="X", j=-1):
         self.player = player
         if j != -1:
-            self.player = 'X' if j % 2 == 0 else 'O'
+            self.player = "X" if j % 2 == 0 else "O"
 
     def empty(self, grid):
-        '''return all empty positions'''
+        """return all empty positions"""
         avail = []
         for i in range(9):
-            pos = (int(i/3), i % 3)
+            pos = (int(i / 3), i % 3)
             if grid[pos] == 0:
                 avail.append(pos)
         return avail
 
     def center(self, grid):
-        '''
+        """
         Pick the center if its available,
         if it's the first step of the game, center or corner are all optimial.
-        '''
+        """
         if np.abs(grid).sum() == 0:
             # first step of the game
             return [(1, 1)] + self.corner(grid)
@@ -178,7 +191,7 @@ class OptimalPlayer:
         return [(1, 1)] if grid[1, 1] == 0 else []
 
     def corner(self, grid):
-        ''' Pick empty corners to move '''
+        """Pick empty corners to move"""
         corner = [(0, 0), (0, 2), (2, 0), (2, 2)]
         cn = []
         # First, pick opposite corner of opponent if it's available
@@ -194,7 +207,7 @@ class OptimalPlayer:
             return cn
 
     def side(self, grid):
-        ''' Pick empty sides to move'''
+        """Pick empty sides to move"""
         rt = []
         for idx in [(0, 1), (1, 0), (1, 2), (2, 1)]:
             if grid[idx] == 0:
@@ -202,9 +215,9 @@ class OptimalPlayer:
         return rt
 
     def win(self, grid, val=None):
-        ''' Pick all positions that player will win after taking it'''
+        """Pick all positions that player will win after taking it"""
         if val is None:
-            val = 1 if self.player == 'X' else -1
+            val = 1 if self.player == "X" else -1
 
         towin = []
         # check all positions
@@ -217,14 +230,14 @@ class OptimalPlayer:
         return towin
 
     def blockWin(self, grid):
-        ''' Find the win positions of opponent and block it'''
-        oppon_val = -1 if self.player == 'X' else 1
+        """Find the win positions of opponent and block it"""
+        oppon_val = -1 if self.player == "X" else 1
         return self.win(grid, oppon_val)
 
     def fork(self, grid, val=None):
-        ''' Find a fork opportunity that the player will have two positions to win'''
+        """Find a fork opportunity that the player will have two positions to win"""
         if val is None:
-            val = 1 if self.player == 'X' else -1
+            val = 1 if self.player == "X" else -1
 
         tofork = []
         # check all positions
@@ -237,23 +250,25 @@ class OptimalPlayer:
         return tofork
 
     def blockFork(self, grid):
-        ''' Block the opponent's fork.
-            If there is only one possible fork from opponent, block it.
-            Otherwise, player should force opponent to block win by making two in a row or column
-            Amomg all possible force win positions, choose positions in opponent's fork in prior
-        '''
-        oppon_val = -1 if self.player == 'X' else 1
+        """Block the opponent's fork.
+        If there is only one possible fork from opponent, block it.
+        Otherwise, player should force opponent to block win by making two in a row or column
+        Amomg all possible force win positions, choose positions in opponent's fork in prior
+        """
+        oppon_val = -1 if self.player == "X" else 1
         oppon_fork = self.fork(grid, oppon_val)
         if len(oppon_fork) <= 1:
             return oppon_fork
 
         # force the opponent to block win
         force_blockwin = []
-        val = 1 if self.player == 'X' else -1
+        val = 1 if self.player == "X" else -1
         for pos in self.empty(grid):
             grid_ = np.copy(grid)
             grid_[pos] = val
-            if np.any(np.sum(grid_, axis=0) == val*2) or np.any(np.sum(grid_, axis=1) == val*2):
+            if np.any(np.sum(grid_, axis=0) == val * 2) or np.any(
+                np.sum(grid_, axis=1) == val * 2
+            ):
                 force_blockwin.append(pos)
         force_blockwin_prior = []
         for pos in force_blockwin:
@@ -265,13 +280,18 @@ class OptimalPlayer:
     def checkWin(self, grid, val=None):
         # check whether the player corresponding to the val will win
         if val is None:
-            val = 1 if self.player == 'X' else -1
+            val = 1 if self.player == "X" else -1
         target = 3 * val
         # check rows and cols
-        if np.any(np.sum(grid, axis=0) == target) or np.any(np.sum(grid, axis=1) == target):
+        if np.any(np.sum(grid, axis=0) == target) or np.any(
+            np.sum(grid, axis=1) == target
+        ):
             return True
         # check diagnols
-        elif grid[[0,1,2],[0,1,2]].sum() == target or grid[[0,1,2],[2,1,0]].sum() == target:
+        elif (
+            grid[[0, 1, 2], [0, 1, 2]].sum() == target
+            or grid[[0, 1, 2], [2, 1, 0]].sum() == target
+        ):
             return True
         else:
             return False
@@ -279,22 +299,24 @@ class OptimalPlayer:
     def checkFork(self, grid, val=None):
         # check whether the player corresponding to the val will fork
         if val is None:
-            val = 1 if self.player == 'X' else -1
+            val = 1 if self.player == "X" else -1
         target = 2 * val
         # check rows and cols
         rows = (np.sum(grid, axis=0) == target).sum()
         cols = (np.sum(grid, axis=1) == target).sum()
-        diags = (grid[[0,1,2],[0,1,2]].sum() == target) + (grid[[0,1,2],[2,1,0]].sum() == target)
+        diags = (grid[[0, 1, 2], [0, 1, 2]].sum() == target) + (
+            grid[[0, 1, 2], [2, 1, 0]].sum() == target
+        )
         if (rows + cols + diags) >= 2:
             return True
         else:
             return False
 
     def randomMove(self, grid):
-        """ Chose a random move from the available options. """
+        """Chose a random move from the available options."""
         avail = self.empty(grid)
 
-        return avail[random.randint(0, len(avail)-1)]
+        return avail[random.randint(0, len(avail) - 1)]
 
     def act(self, grid, **kwargs):
         """
@@ -311,31 +333,31 @@ class OptimalPlayer:
         # Win
         win = self.win(grid)
         if win != []:
-            return win[random.randint(0, len(win)-1)]
+            return win[random.randint(0, len(win) - 1)]
         # Block win
         block_win = self.blockWin(grid)
         if block_win != []:
-            return block_win[random.randint(0, len(block_win)-1)]
+            return block_win[random.randint(0, len(block_win) - 1)]
         # Fork
         fork = self.fork(grid)
         if fork != []:
-            return fork[random.randint(0, len(fork)-1)]
+            return fork[random.randint(0, len(fork) - 1)]
         # Block fork
         block_fork = self.blockFork(grid)
         if block_fork != []:
-            return block_fork[random.randint(0, len(block_fork)-1)]
+            return block_fork[random.randint(0, len(block_fork) - 1)]
         # Center
         center = self.center(grid)
         if center != []:
-            return center[random.randint(0, len(center)-1)]
+            return center[random.randint(0, len(center) - 1)]
         # Corner
         corner = self.corner(grid)
         if corner != []:
-            return corner[random.randint(0, len(corner)-1)]
+            return corner[random.randint(0, len(corner) - 1)]
         # Side
         side = self.side(grid)
         if side != []:
-            return side[random.randint(0, len(side)-1)]
+            return side[random.randint(0, len(side) - 1)]
 
         # random move
         return self.randomMove(grid)
