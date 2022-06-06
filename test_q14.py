@@ -32,8 +32,6 @@ save_all = True
 
 losses_dict = {}
 rewards_dict = {}
-rewards_list = []
-losses_list = []
 metrics_dict = {"M_opt": {}, "M_rand": {}}
 
 # val_list: epsilon_list
@@ -107,15 +105,36 @@ def get_res_from_tests():
 
 
 def get_res_from_saves():
-
-    for eps_opt in epsilon_list:
+    max_m_opts, max_m_rands = [], []
+    for idx, eps_opt in enumerate(epsilon_list):
+        # print(f'{idx+1}/{sample_number}: eps_opt = {eps_opt}')
         inside_prefix = save_prefix + f'_eps_opt{eps_opt}'
         res = np.load(os.path.join('res', inside_prefix + '.npz'))
         m_opts = res['m_opts']
         m_rands = res['m_rands']
+        # max_m_opts.append(max(m_opts))
+        # max_m_rands.append(max(m_rands))
+        max_m_opts.append(m_opts[-1])
+        max_m_rands.append(m_rands[-1])
+        # print(max(m_opts), max(m_rands))
+
         ## data collection
         metrics_dict["M_opt"].update({eps_opt: m_opts})
         metrics_dict["M_rand"].update({eps_opt: m_rands})
+
+    max_m_opts_indices = [i for i, x in enumerate(max_m_opts) if x == max(max_m_opts)]
+    max_m_rands_indices = [
+        i for i, x in enumerate(max_m_rands) if x == max(max_m_rands)
+    ]
+
+    print(
+        f'Max m_opts {max(max_m_opts)} achieves when epsilon = ',
+        [epsilon_list[idx] for idx in max_m_opts_indices],
+    )
+    print(
+        f'Max m_rands {max(max_m_rands)} achieves when epsilon = ',
+        [epsilon_list[idx] for idx in max_m_rands_indices],
+    )
 
     if save_all:
         mul_metrics_plots(
@@ -128,9 +147,7 @@ def get_res_from_saves():
             save_fn=save_prefix,
         )
 
-    # TODO: get results for q15
-
 
 if __name__ == "__main__":
-    get_res_from_tests()
-    # get_res_from_saves()
+    # get_res_from_tests()
+    get_res_from_saves()

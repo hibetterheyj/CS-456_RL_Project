@@ -18,21 +18,19 @@ from dqn_utils import *
 from dqn_player import DQNPlayer, setup_seed
 from viz_utils import reward_loss_plots, metrics_plots, mul_metrics_plots
 
-# setup seed for random, numpy, and torch
-setup_seed(2022)
-
 os.makedirs('plot', exist_ok=True)
 os.makedirs('res', exist_ok=True)
+
+# setup seed for random, numpy, and torch
+setup_seed(2022)
 save_prefix = 'question16'
 val_interval = 250
 save_single = True
 save_all = True
 
-# TODO: record other params!!!
-rewards_list = []
-losses_list = []
+losses_dict = {}
+rewards_dict = {}
 metrics_dict = {"M_opt": {}, "M_rand": {}}
-
 epsilon_list = [i / 5 for i in range(6)]
 
 
@@ -72,6 +70,8 @@ def multi_runs(include_max, include_last):
         ## data collection
         metrics_dict["M_opt"].update({eps: agent.m_opts})
         metrics_dict["M_rand"].update({eps: agent.m_rands})
+        losses_dict.update({eps: losses})
+        rewards_dict.update({eps: rewards})
 
         ## viz
         if save_single:
