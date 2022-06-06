@@ -32,7 +32,6 @@ save_all = True
 losses_dict = {}
 rewards_dict = {}
 metrics_dict = {"M_opt": {}, "M_rand": {}}
-
 epsilon_list = [i / 5.0 for i in range(5)]
 # np.linspace(0, 0.8, 5)
 # [0.2 * i for i in range(5)]
@@ -72,15 +71,15 @@ def multi_runs(include_last):
     for idx, eps in enumerate(epsilon_list):
         print(f'{idx+1}/{len(epsilon_list)}: eps = {eps}')
 
-        agent = DQNPlayer(epsilon=eps, verbose=False)
+        dqn_player = DQNPlayer(epsilon=eps, batch_sz=64, buffer_sz=10000, verbose=False)
         expert = OptimalPlayer(0.5)
-        rewards, losses = agent.train(
+        rewards, losses = dqn_player.train(
             expert, nr_episodes=20000, val_interval=val_interval
         )
 
         ## data collection
-        metrics_dict["M_opt"].update({eps: agent.m_opts})
-        metrics_dict["M_rand"].update({eps: agent.m_rands})
+        metrics_dict["M_opt"].update({eps: dqn_player.m_opts})
+        metrics_dict["M_rand"].update({eps: dqn_player.m_rands})
         losses_dict.update({eps: losses})
         rewards_dict.update({eps: rewards})
 
@@ -88,8 +87,8 @@ def multi_runs(include_last):
         if save_single:
             reward_loss_plots(rewards, losses, save_dir='plot', save_fn=save_prefix)
             metrics_plots(
-                agent.m_opts,
-                agent.m_rands,
+                dqn_player.m_opts,
+                dqn_player.m_rands,
                 val_interval=val_interval,
                 save_dir='plot',
                 save_fn=save_prefix,
@@ -99,8 +98,8 @@ def multi_runs(include_last):
                 os.path.join('res', inside_prefix),
                 rewards=rewards,
                 losses=losses,
-                m_opts=agent.m_opts,
-                m_rands=agent.m_rands,
+                m_opts=dqn_player.m_opts,
+                m_rands=dqn_player.m_rands,
             )
 
     if save_all:
@@ -128,6 +127,8 @@ def multi_runs(include_last):
 
 def get_res_from_saves(include_last):
     for idx, eps in enumerate(epsilon_list):
+        if eps == 1.0:
+            continue
         inside_prefix = save_prefix + '_eps{:0.1f}'.format(eps)
         # eps = '{:0.1f}'.format(eps)
         res = np.load(os.path.join('res', inside_prefix + '.npz'))
