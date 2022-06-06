@@ -270,9 +270,9 @@ class DQNPlayer:
     def multi_games_expert(self, expert, env, episodes):
         win = 0
         los = 0
-        for j in range(episodes):
+        for episode in range(episodes):
             env.reset()
-            winner = self.one_game_expert(expert, env, 0, train=False)
+            winner = self.one_game_expert(expert, env, episode, train=False)
 
             if winner == self.player:
                 win += 1
