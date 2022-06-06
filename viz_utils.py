@@ -64,28 +64,10 @@ def window_avg_plot(
         axes.set_xlabel('Episode')
 
 
-def reward_loss_plots(
-    rewards: List[float],
-    losses: List[float],
-    figsize: Tuple[float] = (10, 6),
-    figtitle: Optional[str] = None,
-    save_dir: Union[Path, str] = 'plot',
-    save_fn: Optional[str] = None,
-    suffix: str = '_reward_loss',
-    viz_fig: bool = False,
-) -> None:
-    fig, axes = plt.subplots(2, 1, figsize=figsize)
-    axes[0].plot([250 * (i + 1) for i in range(len(losses))], losses)
-    axes[0].set_ylabel('Avg. Loss')
-    window_avg_plot(axes=axes[1], var=rewards, var_name='Avg. Reward', set_xlabel=True)
-    if figtitle is not None:
-        fig.suptitle(figtitle)
-
-    if save_fn is not None:
-        fig.tight_layout()
-        plt.savefig(os.path.join(save_dir, save_fn + suffix + '.pdf'), dpi=300)
-        if viz_fig:
-            plt.show()
+def test_window_avg_plot():
+    _, ax = plt.subplots(figsize=(10, 4))
+    rewards_example = np.linspace(-1, 1, 20000) + np.random.rand(20000)
+    window_avg_plot(axes=ax, var=rewards_example, window_sz=20)
 
 
 def metrics_plots(
@@ -130,7 +112,8 @@ def mul_metrics_plots(
     xlim_max: float = 26000.0,
     viz_fig: bool = False,
     cmap: Optional[str] = 'hot',
-    include_max: bool = True,
+    include_max: bool = False,
+    include_last: bool = False,
 ) -> None:
     fig, axes = plt.subplots(2, 1, figsize=figsize)
 
@@ -141,8 +124,8 @@ def mul_metrics_plots(
     if val4label is not None:
         label_prefix += f'{val4label} ='
     val2color = values2color_dict(val_list, cmap=cmap)
-    # m_opts
     ls_set = ['-', '--', '-.']
+    # m_opts
     for idx, val in enumerate(val_list):
         if label_latex:
             label_name = f'${label_prefix} {val}$'
@@ -153,6 +136,8 @@ def mul_metrics_plots(
         M_opt = metrics_dict["M_opt"][val]
         if include_max:
             label_name_opt += ' (max: {:.3f})'.format(max(M_opt))
+        if include_last:
+            label_name_opt += ' (last: {:.3f})'.format(M_opt[-1])
         axes[0].plot(
             game_idx,
             M_opt,
@@ -166,7 +151,9 @@ def mul_metrics_plots(
         label_name_rand = label_name
         M_rand = metrics_dict["M_rand"][val]
         if include_max:
-            label_name_rand += f' (max: {max(M_rand)})'
+            label_name_rand += ' (max: {:.3f})'.format(max(M_rand))
+        if include_last:
+            label_name_rand += ' (last: {:.3f})'.format(M_rand[-1])
         axes[1].plot(
             game_idx,
             M_rand,
@@ -195,7 +182,112 @@ def mul_metrics_plots(
             plt.show()
 
 
-def test_window_avg_plot():
-    _, ax = plt.subplots(figsize=(10, 4))
-    rewards_example = np.linspace(-1, 1, 20000) + np.random.rand(20000)
-    window_avg_plot(axes=ax, var=rewards_example, window_sz=20)
+def reward_loss_plots(
+    rewards: List[float],
+    losses: List[float],
+    figsize: Tuple[float] = (10, 6),
+    figtitle: Optional[str] = None,
+    save_dir: Union[Path, str] = 'plot',
+    save_fn: Optional[str] = None,
+    suffix: str = '_reward_loss',
+    viz_fig: bool = False,
+) -> None:
+    fig, axes = plt.subplots(2, 1, figsize=figsize)
+    axes[0].plot([250 * (i + 1) for i in range(len(losses))], losses)
+    axes[0].set_ylabel('Avg. Loss')
+    window_avg_plot(axes=axes[1], var=rewards, var_name='Avg. Reward', set_xlabel=True)
+    if figtitle is not None:
+        fig.suptitle(figtitle)
+
+    if save_fn is not None:
+        fig.tight_layout()
+        plt.savefig(os.path.join(save_dir, save_fn + suffix + '.pdf'), dpi=300)
+        if viz_fig:
+            plt.show()
+
+
+def mul_reward_loss_plots(
+    reward_dict: Dict,
+    loss_dict: Dict,
+    val_list: List[float] = None,  # n_star_list | eps_list
+    val4label: Optional[str] = None,  # {\epsilon} | n^{*} | {\epsilon}_{opt}
+    label_latex: bool = True,
+    figsize: Tuple[float] = (10, 6),
+    val_interval: int = 250,
+    figtitle: Optional[str] = None,
+    save_dir: Union[Path, str] = 'plot',
+    save_fn: Optional[str] = None,
+    suffix: str = '_reward_loss_mul',
+    xlim_max: float = 26000.0,
+    viz_fig: bool = False,
+    cmap: Optional[str] = 'hot',
+    include_last: bool = False,
+) -> None:
+    fig, axes = plt.subplots(2, 1, figsize=figsize)
+
+    game_idx = [val_interval * (i + 1) for i in range(len(loss_dict[val_list[0]]))]
+
+    label_prefix = ''
+    if val4label is not None:
+        label_prefix += f'{val4label} ='
+    val2color = values2color_dict(val_list, cmap=cmap)
+    ls_set = ['-', '--', '-.']
+    for idx, val in enumerate(val_list):
+        if label_latex:
+            label_name = f'${label_prefix} {val}$'
+        else:
+            label_name = f'{label_prefix} {val}'
+        # loss
+        label_name_loss = label_name
+        loss = loss_dict[val]
+        if include_last:
+            label_name_loss += ' (last: {:.3f})'.format(loss[-1])
+        axes[0].plot(
+            game_idx,
+            loss,
+            ls=ls_set[idx % len(ls_set)],
+            color=val2color[val],
+            label=label_name_loss,
+            lw=2,
+        )
+
+        # reward
+        label_name_reward = label_name
+        reward = reward_dict[val]
+        reward = np.array(reward)
+        avg_reward = np.empty((int(reward.shape[0] / val_interval),))
+        for i in range(0, int(reward.shape[0] / val_interval)):
+            avg_reward[i] = (
+                reward[val_interval * i : val_interval * (i + 1) - 1].sum()
+                / val_interval
+            )
+        episodes = [(i + 1) * val_interval for i in range(avg_reward.shape[0])]
+
+        if include_last:
+            label_name_reward += ' (last: {:.3f})'.format(avg_reward[-1])
+        axes[1].plot(
+            episodes,
+            avg_reward,
+            ls=ls_set[idx % len(ls_set)],
+            color=val2color[val],
+            label=label_name_reward,
+            lw=2,
+        )
+
+    axes[0].set_ylabel('Avg. Loss')
+    axes[0].legend(title='$Loss_{avg}$')
+    axes[0].set_xlim([0, xlim_max])
+
+    axes[1].set_ylabel('Avg. Reward')
+    axes[1].set_xlabel('Episode')
+    axes[1].legend(title='$Reward_{avg}$')
+    axes[1].set_xlim([0, xlim_max])
+
+    if figtitle is not None:
+        fig.suptitle(figtitle)
+
+    if save_fn is not None:
+        fig.tight_layout()
+        plt.savefig(os.path.join(save_dir, save_fn + suffix + '.pdf'), dpi=300)
+        if viz_fig:
+            plt.show()

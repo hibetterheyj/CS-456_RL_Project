@@ -37,7 +37,7 @@ val_interval = 250
 n_star_list = [1, 100, 1000, 10000, 20000, 40000]
 
 
-def get_res_from_tests(include_max):
+def get_res_from_tests(include_max, include_last):
     for idx, n_star in enumerate(n_star_list):
         print(f'{idx+1}/{len(n_star_list)}: n_star = {n_star}')
         agent = DQNPlayer(
@@ -88,7 +88,7 @@ def get_res_from_tests(include_max):
         )
 
 
-def get_res_from_saves(include_max):
+def get_res_from_saves(include_max, include_last):
     for n_star in n_star_list:
         inside_prefix = save_prefix + f'_n_star{n_star}'
         res = np.load(os.path.join('res', inside_prefix + '.npz'))
@@ -113,5 +113,5 @@ def get_res_from_saves(include_max):
 
 
 if __name__ == "__main__":
-    # get_res_from_tests(include_max=True)
-    get_res_from_saves(include_max=True)
+    # get_res_from_tests(include_max=False, include_last=True)
+    get_res_from_saves(include_max=False, include_last=True)

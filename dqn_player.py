@@ -16,9 +16,10 @@ The module provides class and utility functions for DQN method
 
 import copy
 import random
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 from collections import namedtuple, deque
 from tqdm import tqdm
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -153,6 +154,9 @@ class DQNPlayer:
         self.losses = []
         self.m_opts = []
         self.m_rands = []
+
+    def load_policy_ckpt(self, path: Union[str, Path]):
+        pass
 
     def copy(self):
         return copy.deepcopy(self)

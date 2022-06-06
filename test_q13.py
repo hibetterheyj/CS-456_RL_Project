@@ -17,30 +17,32 @@ from dqn_utils import *
 from dqn_player import DQNPlayer, setup_seed
 from viz_utils import reward_loss_plots, metrics_plots, mul_metrics_plots
 
+os.makedirs('plot', exist_ok=True)
+os.makedirs('res', exist_ok=True)
+
 # setup seed for random, numpy, and torch
 setup_seed(2022)
 
-os.makedirs('plot', exist_ok=True)
-os.makedirs('res', exist_ok=True)
 save_prefix = 'question13'
 save_single = True
 save_all = True
 
-rewards_list = []
-losses_list = []
+losses_dict = {}
+rewards_dict = {}
 metrics_dict = {"M_opt": {}, "M_rand": {}}
 
-expert = OptimalPlayer(0.5)
 val_interval = 250
+n_star_list = [1, 100, 1000, 10000, 20000, 40000]
+
 # [1, 100, 1000, 10000, 20000, 40000]
 # [1, 20000]
-n_star_list = [1, 100, 1000, 10000, 20000, 40000]
+
+expert = OptimalPlayer(0.5)
 
 
 def get_res_from_tests():
-    for idx, n_star in enumerate(n_star_list):
-        print(f'{idx+1}/{len(n_star_list)}: n_star = {n_star}')
-        agent = DQNPlayer(
+    q13_dqn_players = [
+        DQNPlayer(
             epsilon=0.01,
             buffer_sz=10000,
             batch_sz=64,
@@ -48,21 +50,29 @@ def get_res_from_tests():
             n_star=n_star,
             verbose=False,
         )
-        rewards, losses = agent.train(
+        for n_star in n_star_list
+    ]
+
+    for idx, n_star in enumerate(n_star_list):
+        print(f'{idx+1}/{len(n_star_list)}: n_star = {n_star}')
+        dqn_player = q13_dqn_players[idx]
+        rewards, losses = dqn_player.train(
             expert, nr_episodes=20000, val_interval=val_interval
         )
 
         ## data collection
-        metrics_dict["M_opt"].update({n_star: agent.m_opts})
-        metrics_dict["M_rand"].update({n_star: agent.m_rands})
+        metrics_dict["M_opt"].update({n_star: dqn_player.m_opts})
+        metrics_dict["M_rand"].update({n_star: dqn_player.m_rands})
+        losses_dict.update({n_star: losses})
+        rewards_dict.update({n_star: rewards})
 
         ## viz
         if save_single:
             inside_prefix = save_prefix + f'_n_star{n_star}'
             reward_loss_plots(rewards, losses, save_dir='plot', save_fn=inside_prefix)
             metrics_plots(
-                agent.m_opts,
-                agent.m_rands,
+                dqn_player.m_opts,
+                dqn_player.m_rands,
                 val_interval=val_interval,
                 save_dir='plot',
                 save_fn=inside_prefix,
@@ -72,8 +82,8 @@ def get_res_from_tests():
                 os.path.join('res', inside_prefix),
                 rewards=rewards,
                 losses=losses,
-                m_opts=agent.m_opts,
-                m_rands=agent.m_rands,
+                m_opts=dqn_player.m_opts,
+                m_rands=dqn_player.m_rands,
             )
             # res = np.load(os.path.join('res', inside_prefix + '.npz'))
 
