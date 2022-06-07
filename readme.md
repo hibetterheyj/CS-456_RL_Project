@@ -1,5 +1,23 @@
 # CS-456_RL_Project
 
+## Features
+
+1. Q-Learning and Deep Q-Learning implementation with Experience Replay
+2. Decrease exploration strategy
+3. Self-practice strategy
+4. Documentation with types hinting
+5. Visualization of rewards, losses, metrics, and learned Q-values
+
+    - Reward and loss visualization
+
+        ![reward_loss_different_exploration](./imgs/reward_loss_different_exploration.png)
+
+    - Q-Table
+
+        | Q-learning | DQN |
+        | --- | --- |
+        | ![q_learn_table](imgs/q_learn_table.png) | ![dqn_table](imgs/dqn_table.png) |
+
 ## Introduction
 
 In this mini-project, our goal is to use Q-Learning and Deep Q-Learning to train artificial agents that can play the famous game of [Tic Tac Toe](https://en.wikipedia.org/wiki/Tic-tac-toe).
@@ -41,3 +59,8 @@ conda install -y pytorch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1 cudatool
 # misc
 python -m pip install tqdm
 ```
+
+## Future work
+
+- Test different reward functions
+- Test different DQN variants
